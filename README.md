@@ -19,6 +19,9 @@ Preloads and applies background images to HTML elements with the `data-backgroun
 ### `preloadAndShowMedia()`
 Preloads and displays audio and video files specified in `<audio>` and `<video>` tags with the `data-src` attribute.
 
+### Priority Management with `data-preload-priority`
+You can manage the priority of resources to preload by using the `data-preload-priority` attribute. This attribute accepts numeric values, allowing you to specify the priority level for preloading. Lower values indicate higher priority.
+
 ### Usage Example
 
 #### Using the Script Imported Directly
@@ -265,6 +268,41 @@ Preloads and displays audio and video files specified in `<audio>` and `<video>`
     document.addEventListener('scroll', handleMediaLoading);
     handleMediaLoading(); // Check on page load
   </script>
+</body>
+</html>
+```
+
+### Example of preloading with priority
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ImgPreload.js Example</title>
+  <script src="https://api.quantiumflow.com/ImgPreload.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        await window.ImgPreload.preloadAndShowImages();
+        console.log('Préchargement des ressources terminé.');
+      } catch (error) {
+        console.error('Erreur lors du préchargement des ressources :', error);
+      }
+
+      try {
+        await window.ImgPreload.preloadAndShowMedia();
+        console.log('Préchargement et affichage des médias terminés.');
+      }catch (error){
+        console.error('Erreur lors du préchargement/affichage des médias :', error)
+      }
+    });
+  </script>
+</head>
+<body>
+  <!-- Your HTML content with image elements -->
+  <img data-preload-priority="5" data-src="path/to/image.jpg" alt="Example Image">
+  <div data-preload-priority="5" data-background="path/to/background.jpg">Background Div</div>
+  <audio controls data-preload-priority="1" data-src="path/to/audio.mp3"></audio>
+  <video controls data-preload-priority="1" data-src="path/to/video.mp4"></video>
 </body>
 </html>
 ```
