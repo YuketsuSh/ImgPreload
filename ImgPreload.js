@@ -9,55 +9,45 @@ function preloadImage(url){
     });
 }
 
-function preloadAndShowImage(url, imgE){
-    return new Promise((resolve, reject) => {
-        preloadImage(url)
-        .then(() => {
-            imgE.src = url;
-            resolve();
-        })
-        .catch((error) => {
-            reject(error);
-        });
-    });
+async function preloadAndShowImage(url, imgE){
+    try {
+        await preloadImage(url);
+        imgE.src = url;
+        console.log(`Préchargement et affichage réussis : {$url}`);
+    }catch (error){
+        console.error(`Erreur lors du préchargement : ${url}`, error);
+        throw new Error(`Erreur lors du préchargement : ${url}`);
+    }
 }
 
-function preloadAndApplyBackground() {
+async function preloadAndApplyBackground() {
     const elementsWithDataBg = document.querySelectorAll('[data-background]');
-    elementsWithDataBg.forEach(element => {
-      const dataBg = element.getAttribute('data-background');
-      if (dataBg) {
-        preloadImage(dataBg)
-          .then(() => {
-            element.style.backgroundImage = `url('${dataBg}')`;
-            console.log(`Préchargement et application d'arrière-plan réussis : ${dataBg}`);
-          })
-          .catch((error) => {
-            console.error(`Erreur lors du préchargement de l'arrière-plan : ${dataBg}`, error);
-          });
-      }
-    });
+    for (const element of elementsWithDataBg) {
+        const dataBg = element.getAttribute('data-background');
+        if (dataBg){
+            try {
+                await preloadImage(dataBg);
+                element.style.backgroundImage = `url('${dataBg}')`;
+                console.log(`Préchargement et application d'arrière-plan réussis : ${dataBg}`);
+            }catch (error) {
+                console.log(`Erreur lors du préchargement de l'arrière-plan : ${dataBg}`, error)
+            }
+        }
+    }
   }
   
-  function preloadAndShowImages() {
+async function preloadAndShowImages() {
     const imgE = document.querySelectorAll('img[data-src]');
-    imgE.forEach(img => {
-      const dataSrc = img.getAttribute('data-src');
-      if (dataSrc) {
-        preloadAndShowImage(dataSrc, img)
-          .then(() => {
-            console.log(`Préchargement et affichage réussis : ${dataSrc}`);
-          })
-          .catch((error) => {
-            console.error(`Erreur lors du préchargement : ${dataSrc}`, error);
-          });
-      }
-    });
-  
-    preloadAndApplyBackground();
-  }
+    for (const img of imgE) {
+        const dataSrc = img.getAttribute('data-src');
+        if (dataSrc) {
+            await preloadAndShowImage(dataSrc, img);
+        }
+    }
 
-  window.ImgPreload = {
+    await preloadAndApplyBackground();
+}
+
+window.ImgPreload = {
     preloadAndShowImages: preloadAndShowImages
-  };
-  
+};
