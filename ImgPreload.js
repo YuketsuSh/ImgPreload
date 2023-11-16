@@ -10,6 +10,7 @@ function preloadImage(url) {
             resolve(cache[url].src);
         } else {
             const img = new Image();
+            img.crossOrigin = "Anonymous";
             img.onload = () => {
                 cache[url] = img;
                 console.log(`Image ${url} chargée et mise en cache.`);
