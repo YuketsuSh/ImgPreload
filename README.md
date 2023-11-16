@@ -44,9 +44,14 @@ Preloads a specific image and then displays it in the specified HTML image eleme
   <title>ImgPreload.js Example</title>
   <script src="path/to/ImgPreload.js"></script>
   <script>
-    // Preload and show images on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      window.ImgPreload.preloadAndShowImages();
+    // Calling the preloadAndShowImages method after the DOM is loaded
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        await window.ImgPreload.preloadAndShowImages();
+        console.log('Préchargement et affichage des images terminés.');
+      } catch (error) {
+        console.error('Erreur lors du préchargement des images :', error);
+      }
     });
   </script>
 </head>
