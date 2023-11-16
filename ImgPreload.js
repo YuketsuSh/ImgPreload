@@ -52,47 +52,43 @@ function adjustCacheSize() {
 
 
 
-async function preloadMedia(url) {
+async function preloadMedia(url, priority = 1) {
     return new Promise((resolve, reject) => {
-        if (cache[url]) {
-            resolve(cache[url]);
-        } else {
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur lors du chargement de la ressource : ${url}`);
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg')) {
-                        const video = document.createElement('video');
-                        video.src = URL.createObjectURL(blob);
-                        video.oncanplaythrough = () => {
-                            cache[url] = video;
-                            resolve(video);
-                        };
-                        video.onerror = reject;
-                    } else if (url.endsWith('.mp3') || url.endsWith('.ogg') || url.endsWith('.wav')) {
-                        const audio = document.createElement('audio');
-                        audio.src = URL.createObjectURL(blob);
-                        audio.oncanplaythrough = () => {
-                            cache[url] = audio;
-                            resolve(audio);
-                        };
-                        audio.onerror = reject;
-                    } else {
-                        throw new Error(`Format de fichier non pris en charge : ${url}`);
-                    }
-                })
-                .catch(error => {
-                    console.error(`Erreur lors du chargement/lecture de la ressource : ${url} - ${error}`);
-                    reject(error);
-                });
-        }
+      if (cache[url]) {
+        resolve(cache[url]);
+      } else {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Erreur lors du chargement de la ressource : ${url}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            let mediaElement;
+  
+            if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg')) {
+              mediaElement = document.createElement('video');
+            } else if (url.endsWith('.mp3') || url.endsWith('.ogg') || url.endsWith('.wav')) {
+              mediaElement = document.createElement('audio');
+            } else {
+              throw new Error(`Format de fichier non pris en charge : ${url}`);
+            }
+  
+            mediaElement.src = URL.createObjectURL(blob);
+            mediaElement.oncanplaythrough = () => {
+              cache[url] = mediaElement;
+              resolve(mediaElement);
+            };
+            mediaElement.onerror = reject;
+          })
+          .catch(error => {
+            console.error(`Erreur lors du chargement/lecture de la ressource : ${url} - ${error}`);
+            reject(error);
+          });
+      }
     });
-}
-
+  }
 
 async function preloadAndShowImage(url, imgElement) {
     try {
@@ -113,11 +109,12 @@ async function preloadAndShowImage(url, imgElement) {
 async function preloadAndShowMediaResource(url, mediaElement) {
     try {
         if (!cache[url]) {
-            const cachedMedia = await preloadMedia(url, mediaElement);
+            const cachedMedia = await preloadMedia(url);
             cache[url] = cachedMedia;
         }
+        const priority = mediaElement.getAttribute('data-preload-priority') || 1;
         mediaElement.src = cache[url].src;
-        console.log(`Préchargement et affichage réussis : ${url}`);
+        console.log(`Préchargement et affichage réussis : ${url}, priority: ${priority}`);
     } catch (error) {
         console.error(`Erreur lors du préchargement : ${url}`, error);
         throw new Error(`Erreur lors du préchargement : ${url}`);
@@ -158,6 +155,7 @@ async function preloadAndShowMedia() {
     const videoElements = document.querySelectorAll('video[data-src]');
 
     for (const audio of audioElements) {
+        const priority = audio.getAttribute('data-preload-priority') || 1;
         const dataSrc = audio.getAttribute('data-src');
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowMediaResource(dataSrc, audio);
@@ -165,6 +163,7 @@ async function preloadAndShowMedia() {
     }
 
     for (const video of videoElements) {
+        const priority = video.getAttribute('data-preload-priority') || 1;
         const dataSrc = video.getAttribute('data-src');
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowMediaResource(dataSrc, video);
