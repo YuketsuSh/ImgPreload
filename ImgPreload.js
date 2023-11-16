@@ -1,5 +1,6 @@
 const cache = {};
 const maxCacheSize = 50; // elements limit in the cache
+const cacheDuration = 30 * 60 * 1000 // Cache lifetime in milliseconds (here, 30 minutes)
 
 function preloadImage(url) {
     return new Promise((resolve, reject) => {
@@ -21,6 +22,19 @@ function preloadImage(url) {
             img.src = url;
         }
     });
+}
+
+function cleanCache(){
+    for (const key in cache){
+        if (cache.hasOwnerProperty(key)){
+            const currentTime = new Date().getTime();
+            const resourceTime = cache[key].cachedTime;
+            if (currentTime - resourceTime > cacheDuration){
+                delete cache[key];
+                console.log(`La ressource ${key} a été retirée du cache car elle a dépassé la durée de vie.`)
+            }
+        }
+    }
 }
 
 function preloadMedia(url, mediaElement) {
@@ -110,6 +124,7 @@ async function preloadAndShowMedia() {
     }
 }
 
+setInterval(cleanCache, 60 * 60 * 1000);
 window.ImgPreload = {
     preloadAndShowImages: preloadAndShowImages,
     preloadAndShowMedia: preloadAndShowMedia
