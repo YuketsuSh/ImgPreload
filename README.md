@@ -1,11 +1,11 @@
 # ImgPreload.js
 
 ## Overview
-ImgPreload.js is a lightweight JavaScript library designed to efficiently preload and display images asynchronously on web pages. This library optimizes the loading process, contributing to a smoother user experience by reducing loading times for visual content.
+ImgPreload.js is a lightweight JavaScript library designed to efficiently preload and display images, audio, and video files asynchronously on web pages. This library optimizes the loading process, contributing to a smoother user experience by reducing loading times for visual and multimedia content.
 
 ## Features
-- Asynchronously preloads images to improve page loading times.
-- Enhances user experience by ensuring faster loading of visual content.
+- Asynchronously preloads images, audio, and video files to improve page loading times.
+- Enhances user experience by ensuring faster loading of visual and multimedia content.
 - Simplified API for easy integration and utilization.
 
 ## API Methods
@@ -16,27 +16,12 @@ Preloads and displays images specified in `<img>` tags with the `data-src` attri
 ### `preloadAndApplyBackground()`
 Preloads and applies background images to HTML elements with the `data-background` attribute.
 
-### `preloadImage(url)`
-Used internally to preload individual images. Returns a promise and resolves once the image is successfully loaded.
+### `preloadAndShowMedia()`
+Preloads and displays audio and video files specified in `<audio>` and `<video>` tags with the `data-src` attribute.
 
-### `preloadAndShowImage(url, imgE)`
-Preloads a specific image and then displays it in the specified HTML image element.
+### Usage Example
 
-## Usage
-
-### Getting Started
-1. Include the `ImgPreload.js` script in your HTML file:
-    ```html
-    <script src="path/to/ImgPreload.js"></script> or <script src="https://api.quantiumflow.com/ImgPreload.js"></script>
-    ```
-
-2. Preload and display images using the provided API methods:
-    ```javascript
-    // Preload and show images
-    window.ImgPreload.preloadAndShowImages();
-    ```
-
-### Example of use by importing the script
+#### Using the Script Imported Directly
 ```html
 <!DOCTYPE html>
 <html>
@@ -44,24 +29,32 @@ Preloads a specific image and then displays it in the specified HTML image eleme
   <title>ImgPreload.js Example</title>
   <script src="path/to/ImgPreload.js"></script>
   <script>
-    // Calling the preloadAndShowImages method after the DOM is loaded
     document.addEventListener('DOMContentLoaded', async function() {
       try {
         await window.ImgPreload.preloadAndShowImages();
-        console.log('Préchargement et affichage des images terminés.');
+        console.log('Préchargement des ressources terminé.');
       } catch (error) {
-        console.error('Erreur lors du préchargement des images :', error);
+        console.error('Erreur lors du préchargement des ressources :', error);
+      }
+
+      try {
+        await window.ImgPreload.preloadAndShowMedia();
+        console.log('Préchargement et affichage des médias terminés.');
+      }catch (error){
+        console.error('Erreur lors du préchargement/affichage des médias :', error)
       }
     });
   </script>
 </head>
 <body>
-  <!-- Your HTML content with image elements -->
+  <!-- Your HTML content with image, audio, and video elements -->
   <img data-src="path/to/image.jpg" alt="Example Image">
   <div data-background="path/to/background.jpg">Background Div</div>
+  <audio controls data-src="path/to/audio.mp3"></audio>
+  <video controls data-src="path/to/video.mp4"></video>
 </body>
 </html>
-```
+
 
 ### Example of use API version
 ```html
@@ -71,13 +64,19 @@ Preloads a specific image and then displays it in the specified HTML image eleme
   <title>ImgPreload.js Example</title>
   <script src="https://api.quantiumflow.com/ImgPreload.js"></script>
   <script>
-    // Calling the preloadAndShowImages method after the DOM is loaded
     document.addEventListener('DOMContentLoaded', async function() {
       try {
         await window.ImgPreload.preloadAndShowImages();
-        console.log('Préchargement et affichage des images terminés.');
+        console.log('Préchargement des ressources terminé.');
       } catch (error) {
-        console.error('Erreur lors du préchargement des images :', error);
+        console.error('Erreur lors du préchargement des ressources :', error);
+      }
+
+      try {
+        await window.ImgPreload.preloadAndShowMedia();
+        console.log('Préchargement et affichage des médias terminés.');
+      }catch (error){
+        console.error('Erreur lors du préchargement/affichage des médias :', error)
       }
     });
   </script>
@@ -86,6 +85,8 @@ Preloads a specific image and then displays it in the specified HTML image eleme
   <!-- Your HTML content with image elements -->
   <img data-src="path/to/image.jpg" alt="Example Image">
   <div data-background="path/to/background.jpg">Background Div</div>
+  <audio controls data-src="path/to/audio.mp3"></audio>
+  <video controls data-src="path/to/video.mp4"></video>
 </body>
 </html>
 ```
