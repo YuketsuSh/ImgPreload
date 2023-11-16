@@ -3,28 +3,33 @@ const maxCacheSize = 50; // elements limit in the cache
 const cacheDuration = 30 * 60 * 1000 // Cache lifetime in milliseconds (here, 30 minutes)
 const memoryThreshold = 100; // Memory threshold in Megabytes
 
-function preloadImage(url) {
+function preloadImage(url, priority = 1) {
     return new Promise((resolve, reject) => {
         if (cache[url]) {
             console.log(`L'image ${url} est déjà dans le cache.`);
             resolve(cache[url].src);
         } else {
             const img = new Image();
+            const resource = { url, priority };
             img.crossOrigin = "Anonymous";
             img.onload = () => {
-                cache[url] = img;
-                console.log(`Image ${url} chargée et mise en cache.`);
-                if (Object.keys(cache).length > maxCacheSize){
+                cache[url] = { img, resource };
+                console.log(`Image ${url} chargée et mise en cache avec priorité ${priority}.`);
+                if (Object.keys(cache).length > maxCacheSize) {
                     const keys = Object.keys(cache);
                     delete cache[keys[0]];
                 }
                 resolve(img.src);
             };
-            img.onerror = reject;
+            img.onerror = () => {
+                console.error(`Erreur lors du chargement de l'image : ${url}`)
+                reject(new Error(`Erreur lors du chargement de l'image : ${url}`))
+            }
             img.src = url;
         }
     });
 }
+
 
 function cleanCache(){
     for (const key in cache){
@@ -68,9 +73,14 @@ function preloadMedia(url, mediaElement) {
 
 async function preloadAndShowImage(url, imgElement) {
     try {
+        const priority = imgElement.getAttribute('data-preload-priority') || 1;
         const cachedImage = await preloadImage(url);
-        imgElement.src = cachedImage;
-        console.log(`Préchargement et affichage réussis : ${url}`);
+        if (cachedImage) {
+            imgElement.src = cachedImage;
+            console.log(`Préchargement et affichage réussis : ${url}`);
+        }else{
+            console.error(`Erreur lors du préchargement : ${url}`);
+        }
     } catch (error) {
         console.error(`Erreur lors du préchargement : ${url}`, error);
         throw new Error(`Erreur lors du préchargement : ${url}`);
@@ -96,6 +106,7 @@ async function preloadAndApplyBackground() {
     const elementsWithDataBg = document.querySelectorAll('[data-background]');
     for (const element of elementsWithDataBg) {
         const dataBg = element.getAttribute('data-background');
+        const priority = element.getAttribute('data-preload-priority') || 1;
         if (dataBg && !cache[dataBg]) {
             try {
                 await preloadImage(dataBg);
@@ -112,6 +123,7 @@ async function preloadAndShowImages() {
     const imgElements = document.querySelectorAll('img[data-src]');
     for (const img of imgElements) {
         const dataSrc = img.getAttribute('data-src');
+        const priority = img.getAttribute('data-preload-priority') || 1;
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowImage(dataSrc, img);
         }
