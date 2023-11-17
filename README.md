@@ -42,13 +42,13 @@ window.ImgPreload.setPreloadMemory(150); // Sets the memory threshold to 150 Meg
 #### Setting Cache Duration
 
 ```javascript
-window.ImgPreload.setPreloadCacheSize(100); // Sets the maximum cache size to 100 elements.
+window.ImgPreload.setCacheDuration(60 * 60 * 1000); // 1 hour cache duration
 ```
 
 #### Setting Cache Size
 
 ```javascript
-window.ImgPreload.setCacheDuration(60 * 60 * 1000); // 1 hour cache duration
+window.ImgPreload.setPreloadCacheSize(100); // Sets the maximum cache size to 100 elements.
 ```
 
 ### Setting Cache Clean Interval
