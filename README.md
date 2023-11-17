@@ -28,6 +28,9 @@ Sets the maximum cache size for preloading resources. It accepts a size paramete
 ### `setCacheDuration(durationInMilliseconds)`
 Sets the cache duration for resources in milliseconds. It accepts a durationInMilliseconds parameter representing the cache duration in milliseconds. This method sets the `data-cache-duration` attribute for elements like `<img>`, `<audio>`, and `<video>`.
 
+### setCacheCleanInterval(intervalInMilliseconds)
+Defines the interval duration (in milliseconds) for cleaning the cache. If not provided, it automatically sets the cache cleaning interval to 5 minutes (300,000 milliseconds).
+
 ### Example of using the New API Methods
 
 #### Setting Memory Threshold
@@ -47,6 +50,13 @@ window.ImgPreload.setPreloadCacheSize(100); // Sets the maximum cache size to 10
 ```javascript
 window.ImgPreload.setCacheDuration(60 * 60 * 1000); // 1 hour cache duration
 ```
+
+### Setting Cache Clean Interval
+
+```javascript
+window.ImgPreload.setCacheCleanInterval(10 * 60 * 1000); // Sets cache clean interval to 10 minutes
+```
+
 
 ### Usage Example
 
