@@ -1,8 +1,9 @@
-const cache = {};
+const cache = new Map();
 let maxCacheSize = 50; // elements limit in the cache
 let cacheDuration = 30 * 60 * 1000 // Cache lifetime in milliseconds (here, 30 minutes)
 let memoryThreshold = 100; // Memory threshold in Megabytes
-
+const expiredResources = [];
+let cacheCleaner;
 
 class PriorityQueue {
     constructor() {
@@ -34,11 +35,10 @@ function preloadImage(url, priority = 1) {
                     const imgUrl = URL.createObjectURL(blob);
                     const img = new Image();
                     img.onload = () => {
-                        cache[url] = img;
+                        cache.set(url, img);
                         console.log(`Image ${url} loaded and cached.`);
-                        if (Object.keys(cache).length > maxCacheSize) {
-                            const keys = Object.keys(cache);
-                            delete cache[keys[0]];
+                        if (cache.size > maxCacheSize) {
+                            cache.delete(cache.keys().next().value);
                         }
                         resolve(img.src);
                     };
@@ -53,11 +53,10 @@ function preloadImage(url, priority = 1) {
         } else {
             const img = new Image();
             img.onload = () => {
-                cache[url] = img;
+                cache.set(url, img);
                 console.log(`Image ${url} loaded and cached.`);
-                if (Object.keys(cache).length > maxCacheSize) {
-                    const keys = Object.keys(cache);
-                    delete cache[keys[0]];
+                if (cache.size > maxCacheSize) {
+                    cache.delete(cache.keys().next().value);
                 }
                 resolve(img.src);
             };
@@ -70,15 +69,11 @@ function preloadImage(url, priority = 1) {
 
 
 function cleanCache(){
-    for (const key in cache){
-        if (cache.hasOwnProperty(key)){
-            const currentTime = new Date().getTime();
-            const resourceTime = cache[key].cachedTime;
-            if (currentTime - resourceTime > cacheDuration){
-                delete cache[key];
-                console.log(`Resource ${key} was removed from cache because it exceeded its lifetime.`)
-            }
-        }
+    const currentTime = new Date().getTime();
+    while (expiredResources.length > 0 && expiredResources[0].expiryTime < currentTime){
+        const expiredResource = expiredResources.shift();
+        cache.delete(expiredResource.url);
+        console.log(`Resource ${expiredResource.url} was removed from cache because it exceeded its lifetime.`);
     }
 }
 
@@ -212,7 +207,6 @@ async function preloadAndShowMedia() {
     }
 }
 
-setInterval(cleanCache, 60 * 60 * 1000);
 setInterval(adjustCacheSize, 10 * 60 * 1000); // Adjust cache size every 10 minutes
 window.ImgPreload = {
     preloadAndShowImages: preloadAndShowImages,
@@ -258,6 +252,13 @@ window.ImgPreload = {
         });
         
         console.log(`Cache duration set to ${durationInMilliseconds} ms for selected elements`);
+    },
+
+    setCacheCleanInterval: function(intervalInMilliseconds = 300000){
+        cacheDuration = intervalInMilliseconds ;
+        clearInterval(cacheCleaner);
+        cacheCleaner = setInterval(cleanCache, intervalInMilliseconds);
+        console.log(`Cache cleaning interval set to ${intervalInMilliseconds} ms`);
     }
     
 };
