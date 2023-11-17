@@ -1,123 +1,168 @@
 const cache = {};
-let maxCacheSize = 50; // Limit of elements in cache
-const cacheDuration = 30 * 60 * 1000; // Cache lifetime in milliseconds (here, 30 minutes)
-const memoryThreshold = 100; // Memory threshold in megabytes
+let maxCacheSize = 50; // elements limit in the cache
+let cacheDuration = 30 * 60 * 1000 // Cache lifetime in milliseconds (here, 30 minutes)
+let memoryThreshold = 100; // Memory threshold in Megabytes
+
+
+class PriorityQueue {
+    constructor() {
+        this.queue = [];
+    }
+
+    enqueue(item, priority) {
+        this.queue.push({ item, priority });
+        this.queue.sort((a, b) => a.priority - b.priority);
+    }
+
+    dequeue() {
+        return this.queue.shift();
+    }
+
+    isEmpty() {
+        return this.queue.length === 0;
+    }
+}
+
+const priorityQueue = new PriorityQueue();
 
 function preloadImage(url, priority = 1) {
     return new Promise((resolve, reject) => {
-        if (cache[url]) {
-            console.log(`L'image ${url} est déjà dans le cache.`);
-            resolve(cache[url].src);
+        if (isExternalURL(url)) {
+            fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const imgUrl = URL.createObjectURL(blob);
+                    const img = new Image();
+                    img.onload = () => {
+                        cache[url] = img;
+                        console.log(`Image ${url} loaded and cached.`);
+                        if (Object.keys(cache).length > maxCacheSize) {
+                            const keys = Object.keys(cache);
+                            delete cache[keys[0]];
+                        }
+                        resolve(img.src);
+                    };
+                    img.onerror = reject;
+                    img.src = imgUrl;
+                    priorityQueue.enqueue(url, priority);
+                })
+                .catch(error => {
+                    console.error(`Error loading image from external URL: ${url}`, error);
+                    reject(error);
+                });
         } else {
             const img = new Image();
-            const resource = { url, priority };
-            img.crossOrigin = "Anonymous";
             img.onload = () => {
-                cache[url] = { img, resource };
-                console.log(`Image ${url} chargée et mise en cache avec priorité ${priority}.`);
+                cache[url] = img;
+                console.log(`Image ${url} loaded and cached.`);
                 if (Object.keys(cache).length > maxCacheSize) {
-                    delete cache[Object.keys(cache)[0]];
+                    const keys = Object.keys(cache);
+                    delete cache[keys[0]];
                 }
                 resolve(img.src);
             };
-            img.onerror = () => {
-                console.error(`Erreur lors du chargement de l'image : ${url}`);
-                reject(new Error(`Erreur lors du chargement de l'image : ${url}`));
-            };
+            img.onerror = reject;
             img.src = url;
+            priorityQueue.enqueue(url, priority);
         }
     });
 }
 
-function cleanCache() {
-    for (const key in cache) {
-        if (cache.hasOwnProperty(key)) {
+
+function cleanCache(){
+    for (const key in cache){
+        if (cache.hasOwnProperty(key)){
             const currentTime = new Date().getTime();
             const resourceTime = cache[key].cachedTime;
-            if (currentTime - resourceTime > cacheDuration) {
+            if (currentTime - resourceTime > cacheDuration){
                 delete cache[key];
-                console.log(`La ressource ${key} a été retirée du cache car elle a dépassé la durée de vie.`);
+                console.log(`Resource ${key} was removed from cache because it exceeded its lifetime.`)
             }
         }
     }
 }
 
-function adjustCacheSize() {
+function adjustCacheSize(){
     const memoryInfo = window.performance.memory;
-    if (memoryInfo && memoryInfo.total) {
+    if (memoryInfo && memoryInfo.total){
         const totalMemoryInMB = memoryInfo.total / (1024 * 1024);
-        maxCacheSize = totalMemoryInMB < memoryThreshold ? Math.floor(maxCacheSize * 0.9) : Math.ceil(maxCacheSize * 1.1);
+        if (totalMemoryInMB < memoryThreshold && maxCacheSize > 10){
+            maxCacheSize = Math.floor(maxCacheSize * 0.9);
+        }else if (totalMemoryInMB > memoryThreshold && maxCacheSize < 100){
+            maxCacheSize = Math.ceil(maxCacheSize * 1.1);
+        }
     }
 }
 
-
-
-async function preloadMedia(url, priority = 1) {
+function preloadMedia(url, mediaElement) {
     return new Promise((resolve, reject) => {
-      if (cache[url]) {
-        resolve(cache[url]);
-      } else {
-        fetch(url)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`Erreur lors du chargement de la ressource : ${url}`);
-            }
-            return response.blob();
-          })
-          .then(blob => {
-            let mediaElement;
-  
-            if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg')) {
-              mediaElement = document.createElement('video');
-            } else if (url.endsWith('.mp3') || url.endsWith('.ogg') || url.endsWith('.wav')) {
-              mediaElement = document.createElement('audio');
+        const priority = mediaElement.getAttribute('data-preload-priority') || 1;
+        if (isExternalURL(url)) {
+            fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const mediaUrl = URL.createObjectURL(blob);
+                    mediaElement.oncanplaythrough = () => {
+                        cache[url] = mediaElement;
+                        resolve(mediaElement);
+                    };
+                    mediaElement.onerror = (error) => {
+                        console.error(`Error loading ${url}`, error);
+                        reject(error);
+                    };
+                    mediaElement.src = mediaUrl;
+                    priorityQueue.enqueue(url, priority);
+                })
+                .catch(error => {
+                    console.error(`Error loading media from external URL: ${url}`, error);
+                    reject(error);
+                });
+        } else {
+            if (cache[url]) {
+                resolve(cache[url]);
             } else {
-              throw new Error(`Format de fichier non pris en charge : ${url}`);
+                mediaElement.oncanplaythrough = () => {
+                    cache[url] = mediaElement;
+                    resolve(mediaElement);
+                };
+                mediaElement.onerror = (error) => {
+                    console.error(`Error loading ${url}`, error);
+                    reject(error);
+                };
+                mediaElement.src = url;
+                priorityQueue.enqueue(url, priority);
             }
-  
-            mediaElement.src = URL.createObjectURL(blob);
-            mediaElement.oncanplaythrough = () => {
-              cache[url] = mediaElement;
-              resolve(mediaElement);
-            };
-            mediaElement.onerror = reject;
-          })
-          .catch(error => {
-            console.error(`Erreur lors du chargement/lecture de la ressource : ${url} - ${error}`);
-            reject(error);
-          });
-      }
+        }
     });
-  }
+}
+
+function isExternalURL(url) {
+    return url.startsWith('http://') || url.startsWith('https://');
+}
 
 async function preloadAndShowImage(url, imgElement) {
     try {
-        const priority = imgElement.getAttribute('data-preload-priority') || 1;
-        const cachedImage = await preloadImage(url, priority);
-        if (cachedImage) {
-            imgElement.src = cachedImage;
-            console.log(`Préchargement et affichage réussis : ${url}`);
-        } else {
-            console.error(`Erreur lors du préchargement : ${url}`);
-        }
+        const cachedImage = await preloadImage(url);
+        imgElement.src = cachedImage;
+        console.log(`Preloading and displaying successfully : ${url}`);
     } catch (error) {
-        console.error(`Erreur lors du préchargement : ${url}`, error);
-        throw new Error(`Erreur lors du préchargement : ${url}`);
+        console.error(`Error while preloading : ${url}`, error);
+        throw new Error(`Error while preloading : ${url}`);
     }
 }
+
 
 async function preloadAndShowMediaResource(url, mediaElement) {
     try {
         if (!cache[url]) {
-            const cachedMedia = await preloadMedia(url);
+            const cachedMedia = await preloadMedia(url, mediaElement);
             cache[url] = cachedMedia;
         }
-        const priority = mediaElement.getAttribute('data-preload-priority') || 1;
         mediaElement.src = cache[url].src;
-        console.log(`Préchargement et affichage réussis : ${url}, priority: ${priority}`);
+        console.log(`Preloading and displaying successfully : ${url}`);
     } catch (error) {
-        console.error(`Erreur lors du préchargement : ${url}`, error);
-        throw new Error(`Erreur lors du préchargement : ${url}`);
+        console.error(`Error while preloading : ${url}`, error);
+        throw new Error(`Error while preloading : ${url}`);
     }
 }
 
@@ -125,14 +170,13 @@ async function preloadAndApplyBackground() {
     const elementsWithDataBg = document.querySelectorAll('[data-background]');
     for (const element of elementsWithDataBg) {
         const dataBg = element.getAttribute('data-background');
-        const priority = element.getAttribute('data-preload-priority') || 1;
         if (dataBg && !cache[dataBg]) {
             try {
-                await preloadImage(dataBg, priority);
+                await preloadImage(dataBg);
                 element.style.backgroundImage = `url('${dataBg}')`;
-                console.log(`Préchargement et application d'arrière-plan réussis : ${dataBg}`);
+                console.log(`Successful preloading and background application : ${dataBg}`);
             } catch (error) {
-                console.error(`Erreur lors du préchargement de l'arrière-plan : ${dataBg}`, error);
+                console.error(`Error preloading background : ${dataBg}`, error);
             }
         }
     }
@@ -142,7 +186,6 @@ async function preloadAndShowImages() {
     const imgElements = document.querySelectorAll('img[data-src]');
     for (const img of imgElements) {
         const dataSrc = img.getAttribute('data-src');
-        const priority = img.getAttribute('data-preload-priority') || 1;
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowImage(dataSrc, img);
         }
@@ -155,7 +198,6 @@ async function preloadAndShowMedia() {
     const videoElements = document.querySelectorAll('video[data-src]');
 
     for (const audio of audioElements) {
-        const priority = audio.getAttribute('data-preload-priority') || 1;
         const dataSrc = audio.getAttribute('data-src');
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowMediaResource(dataSrc, audio);
@@ -163,7 +205,6 @@ async function preloadAndShowMedia() {
     }
 
     for (const video of videoElements) {
-        const priority = video.getAttribute('data-preload-priority') || 1;
         const dataSrc = video.getAttribute('data-src');
         if (dataSrc && !cache[dataSrc]) {
             await preloadAndShowMediaResource(dataSrc, video);
@@ -173,8 +214,50 @@ async function preloadAndShowMedia() {
 
 setInterval(cleanCache, 60 * 60 * 1000);
 setInterval(adjustCacheSize, 10 * 60 * 1000); // Adjust cache size every 10 minutes
-
 window.ImgPreload = {
     preloadAndShowImages: preloadAndShowImages,
-    preloadAndShowMedia: preloadAndShowMedia
+    preloadAndShowMedia: preloadAndShowMedia,
+
+    setPreloadMemory: function(quantity){
+        memoryThreshold = quantity;
+    
+        const elements = document.querySelectorAll('img, audio, video');
+    
+        elements.forEach(element => {
+            const tagName = element.tagName.toLowerCase();
+            if ((tagName === 'img' || tagName === 'audio' || tagName === 'video') && !element.dataset.preloadMemory) {
+                element.dataset.preloadMemory = quantity;
+            }
+        });
+    
+        console.log(`Preload memory set to ${quantity} MB for selected elements`);
+    },
+
+    setPreloadCacheSize: function(size){
+        maxCacheSize = size;
+        const elements = document.querySelectorAll('img, video, audio');
+        elements.forEach(element => {
+            const tagName = element.tagName.toLocaleLowerCase();
+            if ((tagName === 'img' || tagName === 'audio' || tagName === 'video') && !element.dataset.preloadCacheSize) {
+                element.dataset.preloadCacheSize = size;
+            } 
+        });
+        console.log(`Preload cache size set to ${size} for selected elements`);
+    },
+
+    setCacheDuration: function(durationInMilliseconds){
+        cacheDuration = durationInMilliseconds;
+        
+        const elements = document.querySelectorAll('img, audio, video');
+        
+        elements.forEach(element => {
+            const tagName = element.tagName.toLowerCase();
+            if ((tagName === 'img' || tagName === 'audio' || tagName === 'video') && !element.dataset.cacheDuration) {
+                element.dataset.cacheDuration = durationInMilliseconds;
+            }
+        });
+        
+        console.log(`Cache duration set to ${durationInMilliseconds} ms for selected elements`);
+    }
+    
 };
