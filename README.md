@@ -264,7 +264,7 @@ window.ImgPreload.setCacheDuration(60 * 60 * 1000); // 1 hour cache duration
 ```
 
 ### Example if you want to configure the preloader
-```
+```html
 <!DOCTYPE html>
 <html>
 <head>
