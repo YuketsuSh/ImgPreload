@@ -1,3 +1,5 @@
+## ImgPreload Configuration Usage
+
 ### Usage Example
 
 #### Using the Script Imported Directly
