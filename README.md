@@ -57,5 +57,5 @@ window.ImgPreload.setPreloadCacheSize(100); // Sets the maximum cache size to 10
 window.ImgPreload.setCacheCleanInterval(10 * 60 * 1000); // Sets cache clean interval to 10 minutes
 ```
 
-Documentation is [here]
+Documentation is [here](https://github.com/YuketsuSh/ImgPreload/blob/main/docs/Configuration.md)
 
